@@ -1,0 +1,46 @@
+---
+title: "Project Proposal"
+author: "Dina Elsherbini"
+date: "`r format(Sys.Date(), '%B %e, %Y')`"
+output: html_document
+---
+
+## Introduction
+
+Dental caries is a prevalent oral disease that is typically treated using invasive methods like the "drill-and-fill" approach. Recent advancements in regenerative dentistry focus on utilizing human dental pulp stem cells (hDPSCs) to stimulate natural tissue repair. This study investigates the potential of Nano-Silica, a novel nano-biomaterial, to promote odontogenic differentiation of hDPSCs. Nano-Silica has shown osteoinductive properties and can improve the efficacy of growth factors like BMP2 by providing sustained release and reducing side effects. The aim of this research is to explore the use of Nano-silica in combination with BMP2 for more effective dental pulp regeneration.
+
+**The research will address the following questions:**
+
+1. Cell Viability: For each treatment group, what is the mean normalized cell viability at Days 1, 3, and 5, and which Nano-silica concentrations reduce viability below 50% compared to BMP2-treated and control groups?
+
+2. Early Differentiation (ALP Activity): Which treatments produce the highest mean ALP activity at Days 3 and 8, and how does this activity compare between Nano-silica alone, BMP2 alone, and their combinations?
+
+3. Mineralization (Alizarin Red Staining): What is the mean fold-change in mineral deposition at Days 8 and 14 for each treatment group, and which combinations of Nano-silica and BMP2 significantly enhance mineralization compared to single treatments?
+
+## Data
+
+The data to be explored includes cell viability, differentiation markers, and gene expression:
+
+- **MTT Assay** for cell viability after treatment with Nanoclay and BMP2 at varying concentrations, and timepoints.
+- **Alkaline Phosphatase (ALP) Activity** and **Alizarin Red Staining** for assessing odontogenic differentiation at 2 differnt time points for each assay.
+- **Quantitative PCR** to measure the expression of odontogenic markers (DMP1, DSPP, osteocalcin, ALP, RUNX2 genes) at specific 2 time points.
+
+### Groups
+
+1. **Nano-Silica NC** at 10, 100, or 200 µg/mL
+2. **Recombinant BMP2 (rBMP2)** at 30 or 100 ng/mL
+3. **Combination treatments**:
+    1. NC 10 µg/mL + rBMP2 30 ng/mL
+    2. NC 10 µg/mL + rBMP2 100 ng/mL
+    3. NC 100 µg/mL + rBMP2 30 ng/mL
+    4. NC 100 µg/mL + rBMP2 100 ng/mL
+
+The ultimate goal is to determine the impact of Nano-silica on hDPSC differentiation and how it compares to BMP2 alone in promoting dental pulp regeneration.
+
+
+## Dataset Location:
+The dataset will be stored publicly in the GitHub repository:
+https://github.com/elsherbni/DATA4610_Final_Project/tree/main
+
+A local copy will also be included with the final submission.
+

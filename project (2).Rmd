@@ -1,0 +1,369 @@
+---
+title: "Nanoclay-Induced Odontogenic Differentiation of hDPSCs: *A Novel Strategy for Minimally Invasive Dental Regeneration*"
+author: "Dina Elsherbini"
+date: "2025-12-10"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggpubr)
+library(readr)
+library(ggplotify)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(pheatmap)
+library(tibble)
+library(ggplot2)
+library(fmsb)   # For radar plot
+library(tidyr)
+library(scales) # For bubble plot scaling
+library(RColorBrewer)  # For a beautiful color palette
+library(stringr)
+library(plotly)
+```
+
+# Introduction
+
+Dental caries is a widespread disease traditionally treated by invasive “drill-and-fill” methods, which do not leverage the body’s natural regenerative potential. A promising alternative in regenerative dentistry is stimulating human dental pulp stem cells (hDPSCs) to differentiate into odontoblast-like cells that can repair dentin tissue. However, optimizing effective stimuli for this differentiation remains challenging.
+
+This study investigates the use of Nanoclay (NC), a bioactive nano-material known for its osteo-inductive and drug-delivery properties, to enhance odontogenic differentiation. Nanoclay's ability to bind and slowly release growth factors like BMP2 could help reduce the side effects and dosage requirements typically associated with BMP2 treatments. While Nanoclay has shown success in bone regeneration models, its potential in dental tissue engineering is underexplored.
+
+Here, we examine whether Nanoclay alone, or combined with BMP2, can promote the expression of key odontogenic markers in hDPSCs enhance functional outcomes such as calcium deposition. By comparing Nanoclay treatment with standard differentiation protocols, this research aims to evaluate its potential as a simpler, cost-effective tool for advancing minimally invasive therapies that harness natural tooth repair, offering an alternative to traditional restorative dentistry.
+
+**In order to assess that, I'll be answering 4 questions in this report:**
+
+- **Q1:** Cell Viability: For each treatment group, what is the mean normalized cell viability at Days 1, 3, and 5, and which Nano-silica concentrations reduce viability below 50% compared to BMP2-treated and control groups?
+
+- **Q2:** Early Differentiation (ALP Activity): Which treatments produce the highest mean ALP activity at Days 3 and 8, and how does this activity compare between Nano-silica alone, BMP2 alone, and their combinations?
+
+- **Q3.** Mineralization (Alizarin Red Staining): What is the mean fold-change in mineral deposition at Days 8 and 14 for each treatment group, and which combinations of Nano-silica and BMP2 significantly enhance mineralization compared to single treatments?
+
+- **Q4:** Which stimulants and media combinations induce the highest osteogenic gene expression (Fold_Change) over time?
+
+### **Q1:** Cell Viability: For each treatment group, what is the mean normalized cell viability at Days 1, 3, and 5, and which Nano-silica concentrations reduce viability below 50% compared to BMP2-treated and control groups?
+
+Before investigating differentiation outcomes, it was important to confirm that the treatments used did not adversely affect cell health. The viability assay provided this initial check by measuring the metabolic activity of human dental pulp stem cells (hDPSCs) following exposure to varying doses of Nanoclay (NC) and recombinant BMP2 (rBMP2). This step ensured that any later increases in differentiation markers could be confidently attributed to treatment effects and not to reduced cell viability or toxicity.
+
+In this experiment, cells were treated with Nanoclay at concentrations ranging from 10 to 1000 μg/mL and BMP2 at doses between 10 and 100 ng/mL. Viability was assessed at three key timepoints: Day 1, Day 3, and Day 5 after treatment. This design allowed us to observe both immediate and delayed responses to the treatments and to identify any potential dose-dependent effects on cell survival.
+
+The tables (refer to the ipynb FinalProject file), along with the plots presented below illustrate that across Days 1, 3, and 5, normalized cell viability remained stable in all BMP2 treatment groups, with values consistently near or above 1.0 relative to control. In contrast, Nano-silica exposure produced a clear dose-dependent reduction in viability that intensified over time. At Day 1, moderate Nano-silica concentrations (NC10–NC100) maintained viability between 0.75 and 0.89, while higher doses (NC250–NC1000) reduced viability to approximately 0.63–0.69. By Day 3, this pattern persisted, with NC1000 reducing viability below 0.60 and NC500 falling to 0.65, whereas low and mid-range doses (NC10–NC100) remained between 0.70 and 0.81.
+
+At Day 5, reductions became more pronounced. NC1000 showed the greatest cytotoxicity (0.41), and NC500 and NC250 also reduced viability below 0.65. Lower Nano-silica concentrations continued to maintain moderate viability (0.62–0.73), but all remained below the BMP2 and Nano-silica control groups, which stayed near 1.0. Across all time points, Nano-silica concentrations of 250 µg/mL and above (NC250, NC500, NC1000) consistently reduced cell viability below 50–65%, with NC1000 being the only group that repeatedly dropped below 50%. BMP2 alone did not reduce viability at any dose or time point. Overall, the data show that high-dose Nano-silica is cytotoxic, whereas BMP2 maintains baseline viability comparable to controls.
+
+```{r, echo=FALSE}
+MTT <- read_excel("MTT_Tidy.xlsx")
+
+MTT_summary <- MTT %>%
+  group_by(stimulant, day) %>%
+  summarise(
+    Mean = mean(Normalized_OD),
+    N = n(),
+    .groups = "drop"
+  )
+MTT_summary$day <- as.factor(MTT_summary$day)
+
+# Create a new column 'stimulant_group' to group stimulants into NC and BMP
+MTT_summary$stimulant_group <- ifelse(grepl("NC",MTT_summary$stimulant), "NanoClay Group", "BMP Group")
+
+
+#ordering
+MTT_order <- c("NC_Control","NC10","NC25","NC50","NC75","NC100", "NC250","NC500","NC1000","BMP_Control","BMP10","BMP25","BMP50","BMP75","BMP100")
+MTT_summary$stimulant <- factor(MTT_summary$stimulant, levels= MTT_order)
+
+MTT_wrap_plot <- ggplot(MTT_summary, aes(x = day, y = Mean, colour = stimulant, group = stimulant, text = paste(stimulant,"<br>Day:", day, "<br>Mean:", round(Mean, 2)))) +
+  geom_line(size = 0.7, alpha= 0.8) +
+  geom_point(size = 1.5) +
+  scale_y_continuous(limits = c(0.25, 1.1)) +
+  theme_light(base_size = 14) +
+  labs(
+    title = "Cellular Viability Results Over Time", 
+    x = "Day Post Stimulation", 
+    y = "Mean Normalized Viability", 
+    color = "Stimulant"
+  ) +
+  facet_wrap(~ stimulant_group, ncol = 2) +  
+  theme(
+    plot.title = element_text(size = 18, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    legend.position = "right",  
+    strip.text = element_text(size = 14, face = "bold"),  
+    legend.title = element_text(size = 14),  
+    legend.text = element_text(size = 10)  
+  )
+interactive_plot <- ggplotly(MTT_wrap_plot, tooltip = "text")
+interactive_plot
+```
+
+
+```{r, echo=FALSE}
+#bar plot
+MTT_bar_plot <- ggplot(MTT_summary, aes(x = stimulant, y = Mean, fill = stimulant)) +
+  geom_col(position = position_dodge(0.8), width = 0.7) +
+  facet_wrap(~ day, ncol = 1) +
+  theme_light(base_size = 14) +
+  labs(
+    title = "Cellular Viability per Day",
+    x = "Stimulant",
+    y = "Mean Normalized Viability"
+  ) +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+MTT_bar_plot
+
+
+
+
+```
+
+**Based on these findings**, we selected three nanoclay concentrations (10, 100, and 200 µg/mL) and two rBMP2 concentrations (30 and 100 ng/mL) for subsequent differentiation assays. We also investigated combined treatments using NC10 or NC100 with BMP30 or BMP100 to assess potential synergistic effects.
+
+## 2. Cell Stimulation & Odontogenic Induction
+### **Q2:** Early Differentiation (ALP Activity): Which treatments produce the highest mean ALP activity at Days 3 and 8, and how does this activity compare between Nano-silica alone, BMP2 alone, and their combinations? 
+
+To explore the regenerative potential of human dental pulp stem cells (hDPSCs), a series of controlled stimulation experiments were conducted using nanoclay, recombinant BMP2, and their combinations. After allowing the cells to establish, they were exposed to carefully selected concentrations of these bioactive agents, simulating regenerative microenvironments.
+
+A crucial part of the experimental design involved comparing two **`culture conditions`**: a baseline environment that supports general cell maintenance (**CM**), and a specialized environment primed to trigger differentiation (**DM**). This allowed for a nuanced assessment of whether the stimulants could actively drive odontogenic commitment or simply sustain baseline function.
+
+Two key readouts were used to monitor this journey from undifferentiated to specialized cell states. Alkaline phosphatase (ALP) activity, an early signal of odontogenic intent, was tracked across 2 time points (3 & days) to capture the initial response. Later, calcium mineralization, a hallmark of functional dentin-like tissue formation, was assessed visually and quantitatively through Alizarin Red staining across 8 & 14 days after stimulation. Together, these assays created a dynamic profile of cellular transformation over time.
+
+By examining outcomes in both supportive and inductive media contexts, the study could distinguish passive biocompatibility from true bioactivity. While complete media helped reveal general effects on cell viability and responsiveness, the differentiation media clarified whether the cells could be pushed toward a mineralizing phenotype. The comparative data across treatments and conditions ultimately guided the selection of the most promising concentrations for further differentiation testing.
+
+
+```{r, echo=FALSE}
+# Load the tidy ALP& AR data
+df <- read_csv("Differentiation_ALP_AR_Fold_Change_Tidy.csv", show_col_types = FALSE)
+
+
+# Define order of treatments
+treatment_order <- c("NC10", "NC100", "NC200", "P30", "P100",
+                     "NC10P30", "NC10P100", "NC100P30", "NC100P100")
+
+# Create factors and new group labels
+df <- df %>%
+  mutate(
+    Treatment = factor(Treatment, levels = treatment_order),
+    Day_Post_Stim = factor(Day_Post_Stim),
+    Assay = factor(Assay),
+    Group = paste(Treatment, Media, sep = "_")
+  )
+
+  # Figure 1: Faceted Bar Plot with Error Bars
+
+  # Summarize data
+df_summary <- df %>%
+  group_by(Assay, Day_Post_Stim, Treatment, Media) %>%
+  summarise(
+    Mean = mean(Fold_Change, na.rm = TRUE),
+    SD = sd(Fold_Change, na.rm = TRUE),
+    N = n(),
+    SE = SD / sqrt(N),
+    .groups = "drop"
+  )
+
+# Generate bar plot
+p <- ggplot(df_summary, aes(x = Treatment, y = Mean, fill = Media)) +
+  geom_bar(stat = "identity", position = position_dodge(0.6), width = 0.6) +
+  geom_errorbar(
+    aes(ymin = Mean - SE, ymax = Mean + SE),
+    position = position_dodge(0.8), width = 0.4
+  ) +
+  facet_grid(Assay ~ Day_Post_Stim, scales = "free_y") +
+  scale_fill_manual(values = c("CM" = "#66c2a5", "DM" = "#fc8d62")) +
+  theme_light(base_size = 14) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = "grey90"),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 8),
+    axis.title.y = element_text(size = 12),
+    plot.title = element_text(size = 16, face = "bold"),
+    legend.title = element_text(size = 12),  
+    legend.text = element_text(size = 10)
+  ) +
+  labs(title = "Fold Change by Treatment + Media",
+       x = "Treatment", y = "Mean Fold Change ± SE")
+p
+```
+
+*Please refer to Section2 in Finalproject ipynb file*
+
+Across Days 3 and 8, early osteogenic differentiation was driven primarily by Nano-silica, with NC200 consistently producing the highest ALP activity. At Day 3, NC200 was the top performer in both CM (3.16-fold) and DM (2.83-fold), clearly exceeding all other treatments. NC100 and its BMP2 combinations formed a middle tier, with NC100P30 showing the strongest enhancement among combination groups. BMP2 alone (P30, P100) and low-dose Nano-silica treatments (NC10, NC10-combinations) produced minimal ALP activity in both media.
+
+By Day 8, the same hierarchy persisted. In CM, NC100P30 produced the highest ALP activity (3-fold), slightly exceeding NC200, although NC200 remained the strongest single-agent treatment. NC100P100 and BMP2 alone produced moderate activity, while low-dose Nano-silica and its combinations remained weaker. In DM, NC200 again produced the highest ALP levels (2.89-fold), followed by NC100P100 and BMP2 alone. Overall, Nano-silica—especially at higher doses—consistently outperformed BMP2 alone, and combination treatments provided only limited additional benefit compared with NC200 by itself.
+
+### **Q3.** Mineralization (Alizarin Red Staining): What is the mean fold-change in mineral deposition at Days 8 and 14 for each treatment group, and which combinations of Nano-silica and BMP2 significantly enhance mineralization compared to single treatments?
+
+Across both time points, mineralization measured by Alizarin Red staining showed a consistent pattern in which Nano-silica alone—particularly NC200—produced the strongest increases in mineral deposition. At Day 8, NC200 yielded the highest activity in both CM (1.89-fold) and DM (6.99-fold), followed by NC100. The addition of BMP2 at either concentration (P30 or P100) consistently reduced mineralization relative to the corresponding Nano-silica–only groups. Combination treatments such as NC100P100 and NC100P30 generated intermediate responses, while BMP2 alone produced the lowest levels, indicating minimal early mineralization capacity.
+
+By Day 14, NC200 and NC100 remained the most effective treatments in both media, although fold-changes were lower than at Day 8. In CM, all Nano-silica/BMP2 combinations remained below the mineralization achieved by Nano-silica alone. In DM, NC200 and NC100 again dominated (5.35-fold and 4.05-fold), and all combination groups continued to underperform relative to single-agent Nano-silica. Across both days, DM supported substantially greater mineral deposition than CM. Overall, Nano-silica—especially at higher doses—is the primary driver of mineralization, and co-treatment with BMP2 does not enhance, and in most cases reduces, mineral deposition compared with Nano-silica alone.
+
+```{r, echo=FALSE}
+# Filter each assay separately
+df_assay_ALP <- df %>% filter(Assay == "ALP")
+df_assay_AR <- df %>% filter(Assay == "AR")
+
+# Plot for ALP Assay 
+p1 <- ggplot(df_assay_ALP, aes(x = Treatment, y = Fold_Change, fill = Media)) +
+  geom_boxplot(position = position_dodge(0.8), width = 0.6, outlier.shape = NA) +
+  geom_jitter(aes(color = Media), position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), size = 0.4, alpha = 0.6) +
+  #scale_y_continuous(limits = c(0, 7)) +
+  facet_wrap(~ Day_Post_Stim, scales = "free_y", ncol = 2) +
+  scale_fill_manual(values = c("CM" = "#66c2a5", "DM" = "#fc8d62")) +
+  scale_color_manual(values = c("CM" = "#66c2a5", "DM" = "#fc8d62")) +
+  theme_light(base_size = 16) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    strip.text = element_text(size = 10, face = "bold")
+  ) +
+  labs(title = "ALP Assay: Fold Change by Day", x = "Treatment", y = "Fold Change")
+
+
+# Plot for AR Assay 
+p2 <- ggplot(df_assay_AR, aes(x = Treatment, y = Fold_Change, fill = Media)) +
+  geom_boxplot(position = position_dodge(0.8), width = 0.6, outlier.shape = NA) +
+  geom_jitter(aes(color = Media), position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), size = 0.4, alpha = 0.6) +
+  #scale_y_continuous(limits = c(0, 8)) +
+  facet_wrap(~ Day_Post_Stim, scales = "free_y", ncol = 2) +
+  scale_fill_manual(values = c("CM" = "#66c2a5", "DM" = "#fc8d62")) +
+  scale_color_manual(values = c("CM" = "#66c2a5", "DM" = "#fc8d62")) +
+  theme_light(base_size = 16) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    strip.text = element_text(size = 10, face = "bold")
+  ) +
+  labs(title = "AR Assay: Fold Change by Day", x = "Treatment", y = "Fold Change")
+p1
+p2
+
+
+
+
+
+
+```
+
+The faceted plots reveal that treatment efficacy is shaped by both the stimulant and the surrounding media environment. In the ALP assay, nanoclay induced strong early enzyme activation, particularly in complete media (CM), suggesting it can initiate odontogenic signaling independently of differentiation cues. The distribution of responses at Day 3 was right-skewed, with a few high-performing groups—mainly high-dose nanoclay and its combinations. This skewness may reflect an early, concentration-sensitive activation threshold, where only certain groups exceed a bioactive threshold.
+
+In contrast, the AR assay showed a left-skewed distribution under differentiation media (DM), especially at Day 14, with most groups achieving moderate to high mineralization. This indicates a more uniform enhancement of late-stage differentiation when cells are in an osteoinductive environment. Here, higher nanoclay concentrations and combinations with BMP2 consistently showed elevated fold changes, while BMP2 alone remained comparatively weak.
+
+These patterns suggest that CM highlights nanoclay’s autonomous early-stage effects, while DM fosters more widespread and consistent late-stage mineralization. The skewness in each assay reflects how certain treatments either exceed or fall short of the media-dependent thresholds required for effective odontogenic progression.
+
+
+## Gene Expression Analysis: Quantitative PCR
+### **Q4:** Which stimulants and media combinations induce the highest osteogenic gene expression (Fold_Change) over time?
+
+To gain deeper insight into the molecular events driving differentiation, gene expression profiling was conducted at two critical time points, Day 8 and Day 14. This analysis focused on capturing both early and late stages of odontogenic commitment by measuring key marker genes associated with these phases. Early differentiation was assessed by tracking genes such as ALP, BMP2, and DMP1, which are indicative of initial cellular activation and matrix production. In contrast, late-stage differentiation was evaluated by examining DMP1, OCN, and DSPP, genes that signal the maturation of odontoblast-like cells and the onset of mineralization.
+
+Groups selected for gene expression analysis were carefully chosen based on prior functional assay results. Treatments with NC100 and NC200 consistently showed the strongest differentiation activity in both ALP and AR assays, making them ideal candidates to explore underlying transcriptional changes. These groups were analyzed under both standard culture conditions (control media) and osteogenic induction conditions (differentiation media) to discern how nanoclay and media context together influence gene expression trajectories.
+
+```{r, echo=FALSE}
+# Read the data
+data <- read_excel("PCR_tidy.xlsx")
+
+# Check and prepare the data
+data <- data %>%
+  mutate(Stimulant = sub("^N", "NC", Stimulant),
+         Treatment = factor(Stimulant, levels = c("CTRL", "NC100", "NC200")),
+         Day_Post_Stim = factor(Time),
+         Gene = factor(Gene),
+         Group = paste(Treatment, media, sep = "_"))
+
+# Summarize data
+summary_data <- data %>%
+  group_by(Treatment, media, Day_Post_Stim, Gene) %>%
+  summarise(mean_fc = mean(Fold_Change, na.rm = TRUE), .groups = "drop") %>%
+  mutate(Group_Day = paste(media, Treatment, Day_Post_Stim, sep = "_"))
+
+summary_data$Group_Day <- factor(summary_data$Group_Day, levels = c(
+  "CM_CTRL_8", "CM_NC100_8", "CM_NC200_8",
+  "DM_CTRL_8", "DM_NC100_8", "DM_NC200_8",
+  "CM_CTRL_14", "CM_NC100_14", "CM_NC200_14",
+  "DM_CTRL_14", "DM_NC100_14", "DM_NC200_14"
+))
+
+
+# Convert to normal dataframe
+summary_data <- as.data.frame(summary_data)
+
+# Remove NAs if any
+summary_data <- summary_data %>%
+  filter(!is.na(mean_fc))
+
+
+bubble_data <- summary_data %>%
+  select(Group_Day, Gene, mean_fc, Day_Post_Stim)
+
+# Reorder Group_Day to your preferred order
+bubble_data$Group_Day <- factor(bubble_data$Group_Day,
+                                levels = c(
+                                  "CM_CTRL_8", "CM_NC100_8", "CM_NC200_8",
+                                  "DM_CTRL_8", "DM_NC100_8", "DM_NC200_8",
+                                  "CM_CTRL_14", "CM_NC100_14", "CM_NC200_14",
+                                  "DM_CTRL_14", "DM_NC100_14", "DM_NC200_14"
+                                ),
+                                ordered = TRUE)
+
+
+
+# Bubble plot: x = Group_Day, y = Gene, size = mean_fc
+
+p <- ggplot (bubble_data, aes(x = Group_Day, y = Gene, fill= mean_fc)) +
+  geom_tile( width = 1, height = 1) +
+  scale_size(range = c(15,15)) +
+scale_fill_gradientn(
+    colors = brewer.pal(9, "BuPu"),
+    trans = "sqrt",
+    guide = guide_colorbar(barwidth = 1, barheight = 10)
+  ) +
+  theme_light() +
+  labs(title = "Gene Fold Change", x = "Group/Day", y = "Gene") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.text = element_text(size = 8),
+        plot.title = element_text(size = 16, face = "bold"),
+        panel.grid = element_blank(),
+        axis.title.x = element_text(size = 14, face = "bold"),
+        axis.title.y = element_text(size = 14, face = "bold")
+        )
+
+p
+
+# Lollipop plot
+
+p_lollipop <- ggplot(bubble_data, aes(x = Group_Day, y = mean_fc, color = Gene, text = paste(round(mean_fc, 2)))) +
+  geom_segment(aes(xend = Group_Day, y = 0, yend = mean_fc), size = 1) +
+  geom_point(size = 3) +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Lollipop Plot of Gene Expression", x = "Group/Day", y = "Mean Fold Change") +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 12))
+
+pop_interactive <- ggplotly(p_lollipop, tooltip = "text")
+pop_interactive
+
+```
+
+
+*Please refer to section 3 in FinalProject ipynb file.*
+
+Across all 36 comparisons, a consistent pattern emerged in which stimulant potency followed the same hierarchy: N200 produced the highest fold-change for nearly all gene–media–time combinations, N100 generated an intermediate response, and the control condition consistently showed the lowest expression. At the 8-hour time point, this trend was uniform across both CM and DM media for the early osteogenic markers ALP, BMP2, and DMP-1. Induction magnitudes were markedly higher in DM, with BMP2 and DMP-1 showing particularly strong upregulation under N200 stimulation. By 14 hours, late-stage markers demonstrated the greatest responsiveness. In CM, N200 remained the top stimulant for DSPP and OCN, although DMP-1 exhibited a slight shift in which N100 marginally exceeded N200. A similar pattern was observed in DM, where DMP-1 again favored N100 over N200 at 14 hours, but DSPP and OCN maintained the original ranking. Overall, DM media supported stronger osteogenic activation across time points, especially at 8 hours, whereas CM demonstrated substantial late-stage gene induction by 14 hours. Taken together, these results show that N200 is the dominant driver of osteogenic gene expression, N100 provides a secondary but significant stimulatory effect, and the control condition reliably maintains baseline expression, validating the experimental sensitivity and differential responsiveness of the osteogenic panel.
+
+# Conclusion
+This study investigated the potential of nanoclay treatment to enhance odontogenic differentiation of human dental pulp stem cells (hDPSCs) and compared its effects to traditional differentiation protocols. The specific aim was to determine whether nanoclay could independently or synergistically induce the expression of key odontogenic markers, offering a cost-effective and biologically robust alternative to conventional growth factor-based approaches.
+
+Functional assays revealed that nanoclay, particularly at higher concentrations (NC100 and NC200), significantly elevated alkaline phosphatase (ALP) activity at early stages (Day 3 and 8), and enhanced mineralization assessed by Alizarin Red staining at later stages (Days 8 and 14). Notably, differentiation media (DM) further amplified mineralization outcomes, although nanoclay alone also promoted substantial differentiation even under control media (CM).
+
+Quantitative PCR analysis confirmed and expanded upon these findings at the molecular level. Early markers such as BMP2, DMP1, and ALP were strongly upregulated at Day 8, especially in NC200- and NC100-treated groups under DM conditions. By Day 14, late-stage odontogenic markers DSPP, DMP1, and OCN exhibited robust expression, with certain treatments (e.g., NC200-CM for DSPP) demonstrating even higher fold changes than corresponding DM groups. These results demonstrated a clear time- and dose-dependent enhancement of odontogenic gene expression in response to nanoclay treatment.
+
+Overall, nanoclay proved to be a potent inducer of odontogenic differentiation, capable of activating early signaling pathways and promoting terminal matrix production and mineralization. The results suggest that nanoclay can serve both as a standalone stimulatory agent and as a synergistic enhancer of differentiation media, reducing reliance on expensive recombinant growth factors such as BMP2, associated with significant side effects, including ectopic bone formation, inflammation, and unpredictable tissue responses.
+
+These findings have important implications for regenerative dentistry. By demonstrating that nanoclay can effectively promote endogenous tissue repair mechanisms, this work supports the development of minimally invasive therapeutic strategies for the treatment of deep carious lesions. Ultimately, such approaches have the potential to revolutionize clinical practice by providing biologically driven alternatives to the traditional “drill-and-fill” model, preserving natural tooth vitality and structure.
+
